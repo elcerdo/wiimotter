@@ -2,14 +2,13 @@
 #define __CONNECTTHREAD_H__
 
 #include <QThread>
-#include <bluetooth/bluetooth.h>
+#include "Wiimote.h"
 
 class ConnectThread: public QThread {
 Q_OBJECT
 public:
     ConnectThread(QObject *parent=NULL);
-    bool found;
-    bdaddr_t bdaddr;
+    Wiimote *wiimote;
 protected:
     virtual void run();
 };

@@ -6,10 +6,10 @@
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
 
-ConnectThread::ConnectThread(QObject *parent) : QThread(parent), found(false) {}
+ConnectThread::ConnectThread(QObject *parent) : QThread(parent), wiimote(NULL) {}
 
 void ConnectThread::run() {
-    this->found = false;
+    Q_ASSERT(this->wiimote == NULL);
     qDebug("connection thread hello");
 
     inquiry_info *ii = NULL;
@@ -29,7 +29,7 @@ void ConnectThread::run() {
         exit(1);
     }
 
-    len  = 8;
+    len  = 3;
     max_rsp = 255;
     flags = IREQ_CACHE_FLUSH;
     ii = (inquiry_info*)malloc(max_rsp * sizeof(inquiry_info));
@@ -42,15 +42,14 @@ void ConnectThread::run() {
     for (i = 0; i < num_rsp; i++) {
         ba2str(&(&ii[i])->bdaddr, addr);
         memset(name, 0, sizeof(name));
-        if (hci_read_remote_name(sock, &(&ii[i])->bdaddr, sizeof(name), name, 0) < 0) strcpy(name, "unknown");
+        if (hci_read_remote_name(sock, &ii[i].bdaddr, sizeof(name), name, 0) < 0) strcpy(name, "unknown");
         if (valid == NULL and strncmp(name,"Nintendo",8) == 0) valid = &ii[i];
         qDebug("** %s  [%s]", addr, name);
     }
 
     if (valid != NULL) {
         qDebug("found wiimote");
-        bdaddr = valid->bdaddr;
-        this->found = true;
+        this->wiimote = new Wiimote(valid->bdaddr);
     }
 
     free( ii );

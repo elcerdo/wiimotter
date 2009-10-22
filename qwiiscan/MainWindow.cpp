@@ -2,7 +2,6 @@
 
 #include <QToolBar>
 #include <QStatusBar>
-#include <bluetooth/bluetooth.h>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), wiiconnect_thread(NULL) {
 
@@ -30,6 +29,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), wiiconnect_thread
     this->setMinimumSize(400,400);
 }
 
+MainWindow::~MainWindow() {
+    if (wiiconnect_thread) delete wiiconnect_thread->wiimote;
+}
+
 void MainWindow::wiiconnect(bool checked) {
     Q_UNUSED(checked);
     Q_ASSERT(wiiconnect_thread == NULL and checked == false);
@@ -44,10 +47,8 @@ void MainWindow::wiiconnect(bool checked) {
 void MainWindow::wiiconnected(void) {
     Q_ASSERT(wiiconnect_thread != NULL && wiiconnect_thread->isFinished());
 
-    if (wiiconnect_thread->found) {
-        char foo[19];
-        ba2str(&wiiconnect_thread->bdaddr, foo);
-        statusBar()->showMessage(tr("found wiimote %1 !!!").arg(foo));
+    if (wiiconnect_thread->wiimote != NULL) {
+        statusBar()->showMessage(tr("found wiimote %1 !!!").arg(wiiconnect_thread->wiimote->getAddress()));
     } else {
         statusBar()->showMessage(tr("unable to find wiimote"));
         delete wiiconnect_thread;

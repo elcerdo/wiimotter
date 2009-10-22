@@ -9,6 +9,7 @@ class MainWindow: public QMainWindow {
 Q_OBJECT
 public:
     MainWindow(QWidget *parent=NULL);
+    ~MainWindow();
 protected slots:
     void wiiconnect(bool checked);
     void wiiconnected();
