@@ -1,6 +1,5 @@
 #include "Wiimote.h"
 
-#include <cwiid.h>
 #include <cstdio>
 
 static cwiid_wiimote_t *instance = NULL;
@@ -17,8 +16,13 @@ void cwiid_err_callback(cwiid_wiimote_t *wiimote, const char *s, va_list ap) {
 void cwiid_msg_callback(cwiid_wiimote_t *wiimote, int mesg_count, cwiid_mesg mesg[], timespec *timestamp){
     Q_UNUSED(wiimote);
     Q_UNUSED(timestamp);
-    for (int k=0; k<mesg_count; k++) {
-        qDebug("message %d",mesg[k].type);
+    for (int k=0; k<mesg_count; k++) switch (mesg[k].type) {
+        case CWIID_MESG_BTN:
+        //case CWIID_MESG_NUNCHUK:
+            qDebug("message %d",mesg[k].type);
+            break;
+        default:
+            break;
     }
 }
  
@@ -35,7 +39,7 @@ Wiimote::Wiimote(bdaddr_t addr,QObject *parent) : QObject(parent), addr(addr) {
         cwiid_enable(instance,CWIID_FLAG_MESG_IFC);
         cwiid_command(instance,CWIID_CMD_LED,CWIID_LED2_ON | CWIID_LED3_ON);
         //cwiid_command(instance,CWIID_CMD_RPT_MODE,CWIID_RPT_EXT | CWIID_RPT_BTN | CWIID_RPT_ACC | CWIID_RPT_STATUS | CWIID_RPT_IR);
-        cwiid_command(instance,CWIID_CMD_RPT_MODE,CWIID_RPT_EXT | CWIID_RPT_BTN | CWIID_RPT_STATUS);
+        cwiid_command(instance,CWIID_CMD_RPT_MODE,CWIID_RPT_EXT | CWIID_RPT_BTN | CWIID_RPT_STATUS | CWIID_RPT_ACC);
     }
     
 }
@@ -54,3 +58,8 @@ QString Wiimote::getAddress() const {
 }
 
 
+cwiid_state Wiimote::getState() const {
+    cwiid_state state;
+    cwiid_get_state(instance,&state);
+    return state;
+}
