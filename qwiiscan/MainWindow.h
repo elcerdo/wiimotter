@@ -7,6 +7,7 @@
 #include <QTimer>
 #include <qwt/qwt_plot_curve.h>
 #include "ConnectThread.h"
+#include "OscObject.h"
 
 class MainWindow: public QMainWindow {
 Q_OBJECT
@@ -18,11 +19,16 @@ protected slots:
     void wiipoll_callback(void);
     void wiiconnect(bool checked);
     void wiiconnected();
+signals:
+    void accel(double ax,double ay,double az);
 protected:
     QAction *wiiconnect_action;
     ConnectThread *wiiconnect_thread;
     QAction *wiipoll_action;
     QTimer *wiipoll_timer;
+
+    QAction *oscforward_action;
+    OscObject *osc;
 
     //QTime timer;
     QwtPlotCurve *accx_curve;

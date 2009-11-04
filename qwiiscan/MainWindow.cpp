@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), wiiconnect_thread
         connect(wiipoll_timer,SIGNAL(timeout(void)),SLOT(wiipoll_callback(void)));
 
         QwtPlot *plot = new QwtPlot(this);
-        plot->setAxisScale(QwtPlot::xBottom,0,DATALEN-1);
+        plot->setAxisScale(QwtPlot::xBottom,0,(DATALEN-1)*.05);
         plot->setAxisScale(QwtPlot::yLeft,-127,127);
         this->setCentralWidget(plot);
         
@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), wiiconnect_thread
         accy = new double[DATALEN];
         accz = new double[DATALEN];
         time = new double[DATALEN];
-        for (int k=0; k<DATALEN; k++) time[k] = k;
+        for (int k=0; k<DATALEN; k++) time[k] = k*.05;
 
         accx_curve = new QwtPlotCurve("accx");
         accy_curve = new QwtPlotCurve("accx");
@@ -34,6 +34,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), wiiconnect_thread
         accx_curve->attach(plot);
         accy_curve->attach(plot);
         accz_curve->attach(plot);
+    }
+
+    qDebug("creating osc client");
+    {
+        osc = new OscObject(this);
+        connect(this,SIGNAL(accel(double,double,double)),osc,SLOT(forwardAccel(double,double,double)));
     }
 
     qDebug("creating actions");
@@ -47,6 +53,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), wiiconnect_thread
         wiipoll_action->setShortcut(tr("Ctrl+P"));
         wiipoll_action->setCheckable(true);
         connect(wiipoll_action,SIGNAL(triggered(bool)),SLOT(wiipoll(bool)));
+
+        oscforward_action = new QAction(tr("&Forward"),this);
+        oscforward_action->setShortcut(tr("Ctrl+F"));
+        oscforward_action->setCheckable(true);
+        connect(oscforward_action,SIGNAL(triggered(bool)),osc,SLOT(forward(bool)));
     }
 
     qDebug("creating toolbar");
@@ -54,6 +65,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), wiiconnect_thread
     {
         toptools->addAction(wiiconnect_action);
         toptools->addAction(wiipoll_action);
+        toptools->addAction(oscforward_action);
         this->addToolBar(Qt::TopToolBarArea,toptools);
     }
 
@@ -98,6 +110,7 @@ void MainWindow::wiipoll_callback() {
     accx[DATALEN-1] = 128-state.acc[0];
     accy[DATALEN-1] = 128-state.acc[1];
     accz[DATALEN-1] = 128-state.acc[2];
+    emit accel(accx[DATALEN-1]/128.,accy[DATALEN-1]/128.,accz[DATALEN-1]/128.);
     //time[DATALEN-1] = timer.elapsed()*1e-3;
     if (datawidth<(DATALEN-1)) datawidth++;
 
@@ -129,6 +142,7 @@ void MainWindow::wiiconnected(void) {
 
     if (wiiconnect_thread->wiimote != NULL) {
         statusBar()->showMessage(tr("found wiimote %1 !!!").arg(wiiconnect_thread->wiimote->getAddress()));
+        connect(wiiconnect_thread->wiimote,SIGNAL(buttonToggled(int,bool)),osc,SLOT(forwardButton(int,bool)));
     } else {
         statusBar()->showMessage(tr("unable to find wiimote"));
         delete wiiconnect_thread;
